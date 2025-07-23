@@ -1,0 +1,40 @@
+{
+  "name": "trello-server",
+  "version": "1.0.0",
+  "description": "",
+  "homepage": "https://github.com/alexgrist14/trello-server#readme",
+  "bugs": {
+    "url": "https://github.com/alexgrist14/trello-server/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alexgrist14/trello-server.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.ts",
+  "scripts": {
+    "start": "nodemon index.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.0",
+    "express": "^5.1.0",
+    "nodemon": "^3.1.10",
+    "pg": "^8.16.3",
+    "sequelize": "^6.37.7"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.31.0",
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.1.0",
+    "@types/sequelize": "^4.28.20",
+    "eslint": "^9.31.0",
+    "prettier": "^3.6.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.38.0"
+  }
+}
