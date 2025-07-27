@@ -7,12 +7,22 @@ export const LogsController = {
     res.json(logs);
   },
 
-  async getByEntity(req: Request, res: Response) {
-    const { entity } = req.params;
+  async getLogsByBoard(req: Request, res: Response) {
+    const { boardId } = req.params;
+
     const logs = await Log.findAll({
-      where: { entity },
+      where: { boardId },
       order: [["createdAt", "DESC"]],
     });
-    res.json(logs);
+
+    const formattedLogs = logs.map((log) => ({
+      action: log.action,
+      title: log.title,
+      boardId: log.boardId,
+      entity: log.entity,
+      createdAt: log.createdAt,
+    }));
+
+    res.json(formattedLogs);
   },
 };

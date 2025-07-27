@@ -18,6 +18,12 @@ export default class Log extends Model {
   @Column({ type: DataType.STRING, allowNull: false })
   action!: "create" | "update" | "delete";
 
+  @Column({ type: DataType.INTEGER, allowNull: false })
+  boardId!: number;
+
+  @Column({ type: DataType.STRING, allowNull: false })
+  title!: string;
+
   @CreatedAt
   createdAt!: Date;
 

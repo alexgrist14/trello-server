@@ -5,6 +5,7 @@ import { BoardController } from "./controllers/board.controller";
 import { ListController } from "./controllers/list.controller";
 import { TaskController } from "./controllers/task.controller";
 import { errorHandler } from "./middleware/errorHandler";
+import { LogsController } from "./controllers/logs.controller";
 
 const app = express();
 
@@ -27,6 +28,9 @@ app.post("/api/lists/:listId/tasks", TaskController.create);
 app.patch("/api/tasks/:id", TaskController.update);
 app.put("/api/tasks/:id", TaskController.reorder);
 app.delete("/api/tasks/:id", TaskController.delete);
+
+app.get("/api/logs", LogsController.getAll);
+app.get("/api/logs/:boardId", LogsController.getLogsByBoard);
 
 app.use(errorHandler);
 export default app;

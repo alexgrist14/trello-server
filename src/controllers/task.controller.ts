@@ -4,21 +4,21 @@ import sequelize from "../config/sequelize";
 import { NotFoundError } from "../errors/NotFoundError";
 import { logAction } from "../utils/logsAction";
 import { Op } from "sequelize";
-interface ReorderTaskDTO {
-  id: number;
-  order: number;
-  listId: number;
-}
+import List from "../models/List";
 
 export const TaskController = {
   async create(req: Request, res: Response) {
     const { listId } = req.params;
     const { title, description } = req.body;
     const result = await sequelize.transaction(async (transaction) => {
+      const list = await List.findByPk(listId, {
+        transaction,
+        rejectOnEmpty: new NotFoundError("List not found"),
+      });
       const lastTask = await Task.findAll({
         limit: 1,
         where: { listId },
-        order: [["createdAt", "DESC"]],
+        order: [["taskOrder", "DESC"]],
         transaction,
       });
       const order = lastTask?.[0]?.taskOrder;
@@ -27,7 +27,7 @@ export const TaskController = {
         { title, listId, description, taskOrder },
         { transaction }
       );
-      await logAction("Task", task.id, "create");
+      await logAction("Task", task.id, "create", list.boardId, title);
       return task;
     });
     res.status(201).json(result.get({ plain: true }));
@@ -35,14 +35,18 @@ export const TaskController = {
 
   async update(req: Request, res: Response) {
     const { id } = req.params;
-    const { title, order, listId } = req.body;
+    const { title, order, listId, description } = req.body;
     const result = await sequelize.transaction(async (transaction) => {
       const task = await Task.findByPk(id, {
         transaction,
         rejectOnEmpty: new NotFoundError("Task not found"),
       });
-      await task.update({ title, order, listId }, { transaction });
-      await logAction("Task", task.id, "update");
+      const list = await List.findByPk(task.listId, {
+        transaction,
+        rejectOnEmpty: new NotFoundError("List not found"),
+      });
+      await task.update({ title, order, listId, description }, { transaction });
+      await logAction("Task", task.id, "update", list.boardId, title);
       return task;
     });
 
@@ -57,8 +61,13 @@ export const TaskController = {
         rejectOnEmpty: new NotFoundError("Task not found"),
       });
 
+      const list = await List.findByPk(task.listId, {
+        transaction,
+        rejectOnEmpty: new NotFoundError("List not found"),
+      });
+
       await task.destroy({ transaction });
-      await logAction("Task", task.id, "delete");
+      await logAction("Task", task.id, "delete", list.boardId, task.title);
     });
 
     res.json({ message: "Task deleted" });
@@ -66,7 +75,7 @@ export const TaskController = {
 
   async reorder(req: Request, res: Response) {
     const { id } = req.params;
-    const { newOrder } = req.body;
+    const { newOrder, newListId } = req.body;
 
     const updatedTasks = await sequelize.transaction(async (transaction) => {
       const task = await Task.findOne({
@@ -75,41 +84,78 @@ export const TaskController = {
         rejectOnEmpty: new NotFoundError("Task not found"),
       });
 
+      const list = await List.findByPk(task.listId, {
+        transaction,
+        rejectOnEmpty: new NotFoundError("List not found"),
+      });
+
       const oldOrder = task.taskOrder;
+      const oldListId = task.listId;
 
-      if (newOrder === oldOrder) {
-        return await Task.findAll({
-          where: { listId: task.listId },
-          order: [["taskOrder", "ASC"]],
-          transaction,
-        });
-      }
+      const isSameList = oldListId === newListId;
 
-      if (newOrder > oldOrder) {
+      if (isSameList) {
+        if (newOrder === oldOrder) {
+          return await Task.findAll({
+            where: { listId: oldListId },
+            order: [["taskOrder", "ASC"]],
+            transaction,
+          });
+        }
+
+        if (newOrder > oldOrder) {
+          await Task.decrement("taskOrder", {
+            by: 1,
+            where: {
+              listId: oldListId,
+              taskOrder: { [Op.gt]: oldOrder, [Op.lte]: newOrder },
+            },
+            transaction,
+          });
+        } else {
+          await Task.increment("taskOrder", {
+            by: 1,
+            where: {
+              listId: oldListId,
+              taskOrder: { [Op.gte]: newOrder, [Op.lt]: oldOrder },
+            },
+            transaction,
+          });
+        }
+
+        await task.update({ taskOrder: newOrder }, { transaction });
+      } else {
         await Task.decrement("taskOrder", {
           by: 1,
           where: {
-            listId: task.listId,
-            taskOrder: { [Op.gt]: oldOrder, [Op.lte]: newOrder },
+            listId: oldListId,
+            taskOrder: { [Op.gt]: oldOrder },
           },
           transaction,
         });
-      } else {
+
         await Task.increment("taskOrder", {
           by: 1,
           where: {
-            listId: task.listId,
-            taskOrder: { [Op.gte]: newOrder, [Op.lt]: oldOrder },
+            listId: newListId,
+            taskOrder: { [Op.gte]: newOrder },
           },
           transaction,
         });
+
+        await task.update(
+          {
+            listId: newListId,
+            taskOrder: newOrder,
+          },
+          { transaction }
+        );
       }
 
-      await task.update({ taskOrder: newOrder }, { transaction });
-      await logAction("Task", task.id, "update");
+      await logAction("Task", task.id, "update", list.boardId, task.title);
 
       return await Task.findAll({
-        where: { listId: task.listId },
+        where: { listId: newListId },
         order: [["taskOrder", "ASC"]],
         transaction,
       });
