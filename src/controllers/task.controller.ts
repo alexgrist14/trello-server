@@ -4,17 +4,12 @@ import sequelize from "../config/sequelize";
 import { NotFoundError } from "../errors/NotFoundError";
 import { logAction } from "../utils/logsAction";
 import { Op } from "sequelize";
-import List from "../models/List";
 
 export const TaskController = {
   async create(req: Request, res: Response) {
-    const { listId } = req.params;
+    const { listId, boardId } = req.params;
     const { title, description } = req.body;
     const result = await sequelize.transaction(async (transaction) => {
-      const list = await List.findByPk(listId, {
-        transaction,
-        rejectOnEmpty: new NotFoundError("List not found"),
-      });
       const lastTask = await Task.findAll({
         limit: 1,
         where: { listId },
@@ -27,66 +22,59 @@ export const TaskController = {
         { title, listId, description, taskOrder },
         { transaction }
       );
-      await logAction("Task", task.id, "create", list.boardId, title);
+
       return task;
     });
-    res.status(201).json(result.get({ plain: true }));
+
+    await logAction("Task", result.id, "create", +boardId, title);
+    res.status(201).json(result.get());
   },
 
   async update(req: Request, res: Response) {
-    const { id } = req.params;
+    const { id, boardId } = req.params;
     const { title, order, listId, description } = req.body;
     const result = await sequelize.transaction(async (transaction) => {
       const task = await Task.findByPk(id, {
         transaction,
         rejectOnEmpty: new NotFoundError("Task not found"),
       });
-      const list = await List.findByPk(task.listId, {
-        transaction,
-        rejectOnEmpty: new NotFoundError("List not found"),
-      });
+
       await task.update({ title, order, listId, description }, { transaction });
-      await logAction("Task", task.id, "update", list.boardId, title);
+
       return task;
     });
 
-    res.json(result.get({ plain: true }));
+    await logAction("Task", result.id, "update", +boardId, title);
+
+    res.json(result.get());
   },
 
   async delete(req: Request, res: Response) {
-    const { id } = req.params;
+    const { id, boardId } = req.params;
 
     const result = await sequelize.transaction(async (transaction) => {
       const task = await Task.findByPk(id, {
         rejectOnEmpty: new NotFoundError("Task not found"),
       });
 
-      const list = await List.findByPk(task.listId, {
-        transaction,
-        rejectOnEmpty: new NotFoundError("List not found"),
-      });
-
       await task.destroy({ transaction });
-      await logAction("Task", task.id, "delete", list.boardId, task.title);
+
+      return task;
     });
+
+    await logAction("Task", result.id, "delete", +boardId, result.title);
 
     res.json({ message: "Task deleted" });
   },
 
   async reorder(req: Request, res: Response) {
-    const { id } = req.params;
+    const { id, boardId } = req.params;
     const { newOrder, newListId } = req.body;
 
     const updatedTasks = await sequelize.transaction(async (transaction) => {
-      const task = await Task.findOne({
-        where: { id },
+      const task = await Task.findByPk(id, {
         transaction,
         rejectOnEmpty: new NotFoundError("Task not found"),
-      });
-
-      const list = await List.findByPk(task.listId, {
-        transaction,
-        rejectOnEmpty: new NotFoundError("List not found"),
       });
 
       const oldOrder = task.taskOrder;
@@ -152,14 +140,20 @@ export const TaskController = {
         );
       }
 
-      await logAction("Task", task.id, "update", list.boardId, task.title);
-
       return await Task.findAll({
         where: { listId: newListId },
         order: [["taskOrder", "ASC"]],
         transaction,
       });
     });
+
+    await logAction(
+      "Task",
+      updatedTasks[0].id,
+      "update",
+      +boardId,
+      updatedTasks[0].title
+    );
 
     res.json(updatedTasks);
   },

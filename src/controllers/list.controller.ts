@@ -20,11 +20,12 @@ export const ListController = {
     const { boardId } = req.params;
     const result = await sequelize.transaction(async (transaction) => {
       const list = await List.create({ title, boardId }, { transaction });
-      await logAction("List", list.id, "create", +boardId, list.title);
       return list;
     });
 
-    res.status(201).json(result.get({ plain: true }));
+    await logAction("List", result.id, "create", +boardId, result.title);
+
+    res.status(201).json(result.get());
   },
 
   async update(req: Request, res: Response) {
@@ -36,11 +37,13 @@ export const ListController = {
         rejectOnEmpty: new NotFoundError("List not found"),
       });
       await list.update({ title });
-      await logAction("List", list.id, "update", list.boardId, list.title);
+
       return list;
     });
 
-    res.json(result.get({ plain: true }));
+    await logAction("List", result.id, "update", result.boardId, result.title);
+
+    res.json(result.get());
   },
 
   async delete(req: Request, res: Response) {
@@ -50,8 +53,10 @@ export const ListController = {
         rejectOnEmpty: new NotFoundError("List not found"),
       });
       await list.destroy({ transaction });
-      await logAction("List", list.id, "delete", list.boardId, list.title);
+      return list;
     });
+    await logAction("List", result.id, "delete", result.boardId, result.title);
+
     res.json({ message: "List deleted" });
   },
 };

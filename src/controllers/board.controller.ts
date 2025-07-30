@@ -33,11 +33,8 @@ export const BoardController = {
 
   async create(req: Request, res: Response) {
     const { title } = req.body;
-    const result = await sequelize.transaction(async (transaction) => {
-      const board = await Board.create({ title }, { transaction });
-      return board;
-    });
-    res.status(201).json(result?.get({ plain: true }));
+    const board = await Board.create({ title });
+    res.status(201).json(board);
   },
 
   async update(req: Request, res: Response) {
@@ -52,7 +49,7 @@ export const BoardController = {
       return board;
     });
 
-    res.json(result?.get({ plain: true }));
+    res.json(result.get());
   },
 
   async delete(req: Request, res: Response) {

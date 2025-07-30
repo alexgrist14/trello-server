@@ -16,8 +16,9 @@
   "main": "index.ts",
   "scripts": {
     "start": "nodemon index.ts",
+    "start:prod": "node dist/index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "migrate": "tsc -p . & npx sequelize-cli db:migrate "
+    "migrate": "npm run build && npx sequelize-cli db:migrate"
   },
   "dependencies": {
     "cors": "^2.8.5",

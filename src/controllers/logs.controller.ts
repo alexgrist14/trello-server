@@ -13,16 +13,9 @@ export const LogsController = {
     const logs = await Log.findAll({
       where: { boardId },
       order: [["createdAt", "DESC"]],
+      attributes: ["action", "title", "boardId", "entity", "createdAt"],
     });
 
-    const formattedLogs = logs.map((log) => ({
-      action: log.action,
-      title: log.title,
-      boardId: log.boardId,
-      entity: log.entity,
-      createdAt: log.createdAt,
-    }));
-
-    res.json(formattedLogs);
+    res.json(logs);
   },
 };
