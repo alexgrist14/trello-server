@@ -22,7 +22,7 @@ export const TaskController = {
         transaction,
       });
       const order = lastTask?.[0]?.taskOrder;
-      const taskOrder = order === undefined ? 0 : order + 1;
+      const taskOrder = order === undefined ? 1 : order + 1;
       const task = await Task.create(
         { title, listId, description, taskOrder },
         { transaction }
