@@ -18,14 +18,11 @@ export const ListController = {
   async create(req: Request, res: Response) {
     const { title } = req.body;
     const { boardId } = req.params;
-    const result = await sequelize.transaction(async (transaction) => {
-      const list = await List.create({ title, boardId }, { transaction });
-      return list;
-    });
+    const list = await List.create({ title, boardId });
 
-    await logAction("List", result.id, "create", +boardId, result.title);
+    await logAction("List", list.id, "create", +boardId, list.title);
 
-    res.status(201).json(result.get());
+    res.status(201).json(list);
   },
 
   async update(req: Request, res: Response) {
