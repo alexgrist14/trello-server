@@ -16,7 +16,9 @@
   "main": "index.ts",
   "scripts": {
     "start": "nodemon index.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start:prod": "node dist/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "migrate": "npm run build && npx sequelize-cli db:migrate"
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -24,12 +26,15 @@
     "express": "^5.1.0",
     "nodemon": "^3.1.10",
     "pg": "^8.16.3",
-    "sequelize": "^6.37.7"
+    "sequelize": "^6.37.7",
+    "sequelize-typescript": "^2.1.6"
   },
   "devDependencies": {
     "@eslint/js": "^9.31.0",
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "@types/node": "^24.1.0",
+    "@types/pg": "^8.15.4",
     "@types/sequelize": "^4.28.20",
     "eslint": "^9.31.0",
     "prettier": "^3.6.2",
